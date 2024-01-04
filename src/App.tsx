@@ -39,8 +39,17 @@ export default function App() {
         // }
     }
 
+    const checkApi = async () => {
+        try {
+            let r = await bitable.base.getTableMetaList()
+            console.log("获取表结构", r)
+        }catch (e) {
+            console.error(e)
+        }
+    }
+
     useEffect(() => {
-        checkStore()
+        checkApi()
     }, []);
 
     useEffect(() => {
