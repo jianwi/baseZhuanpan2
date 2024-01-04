@@ -6,17 +6,12 @@ import {
     IFilterDateTimeValue,
 } from "@lark-base-open/js-sdk";
 import {Banner, Button, Card, Col, DatePicker, Input, Modal, Row, Select, Space, Table, Toast} from "@douyinfe/semi-ui";
-import {IconAlarm, IconConnectionPoint1, IconCrossStroked, IconDelete, IconMinus, IconSend} from "@douyinfe/semi-icons";
-import {useTranslation} from "react-i18next";
-import {getFilterOperatorMap} from "./utils";
 
 
 export default function App() {
-    const [resultTableId, setResultTableId] = useState("")
     const baseInfo = useRef({
         baseId: "",
         zpInfo: {},
-        resultTableId: "",
         tables: [],
         zpWeb: null
     })
@@ -27,30 +22,12 @@ export default function App() {
         console.log("currentSelection", currentSelection)
         baseInfo.current.baseId = currentSelection.baseId
 
-        // // 检查有无 result 表
-        // let resultTableId = await bitable.bridge.getData("resultTableId")
-        // if (resultTableId) {
-        //     // 判断 result 表是否存在
-        //     let r = await bitable.base.getTableById(resultTableId)
-        //     console.log(r)
-        //     setResultTableId(r.id)
-        // } else {
-        //
-        // }
     }
-    const [baseUrl, setBaseUrl] = useState("")
     const [uaString, setUaString] = useState("")
     const checkApi = async () => {
         try {
-            console.log("开始获取表结构", 111)
-            let r = await bitable.base.getTableMetaList()
-            console.log("获取表结构", r)
             let userAgentString = navigator.userAgent;
             setUaString(userAgentString)
-            let selection = await bitable.base.getSelection()
-            let baseUrl = await bitable.bridge.getBitableUrl(selection)
-            setBaseUrl(baseUrl)
-            console.log("baseUrl", baseUrl)
         }catch (e) {
             console.error(e)
         }
@@ -87,17 +64,23 @@ export default function App() {
                     let resultText = data.result
                     let zpTitle = data.title
                     console.log("添加结果", resultText)
-                    let resultTable = await bitable.bridge.getData("resultTable")
-                    console.log("resultTable", resultTable)
-                    if (Object.values(resultTable).length === 0) {
+                    let tableName = "转盘抽奖记录"
+                    let resultTable
+                    try {
+                        resultTable = await bitable.base.getTableByName(tableName)
+                    }catch (e) {
+                        console.error("获取表失败",e)
+                    }
+                    if (!resultTable) {
                         console.log("创建表")
                         // 创建表
-                        let table = await bitable.base.addTable({
-                            name: "转盘结果" + (Date.now() % 1000000).toString(30),
+                        await bitable.base.addTable({
+                            name: tableName,
                             fields: [
                                 {
                                     name: "ID",
                                     type: FieldType.AutoNumber,
+
                                 },
                                 {
                                     name: "转盘名称",
@@ -125,33 +108,46 @@ export default function App() {
                                 }
                             ]
                         })
-                        await bitable.bridge.setData("resultTable", table)
-                        resultTable = table
+                        resultTable = await bitable.base.getTableByName(tableName)
                     }
                     // 写入数据
-                    // @ts-ignore
-                    let tableObj = await bitable.base.getTableById(resultTable.tableId)
-                    let fields = await tableObj.getFieldMetaList()
-                    console.log(fields)
-                    // await tableObj
-                    let nameObjMap = {}
-                    for (let field of fields) {
-                        nameObjMap[field.name] = field.id
+                    let getNameIdMap = async function (){
+                        // @ts-ignore
+                        let fields = await resultTable.getFieldMetaList()
+                        console.log(fields)
+                        // await tableObj
+                        let nameObjMap = {}
+                        for (let field of fields) {
+                            nameObjMap[field.name] = field.id
+                        }
+                        return nameObjMap
                     }
-                    if (!nameObjMap["转盘名称"] || !nameObjMap['抽奖结果']) {
-                        await bitable.bridge.setData("resultTable", {})
-                        return
+                    let nameObjMap = await getNameIdMap()
+
+                    if (!nameObjMap["转盘名称"]) {
+                        // 添加 转盘名称 字段
+                        await resultTable.addField({
+                            name: "转盘名称",
+                            type: FieldType.Text
+                        })
+                        nameObjMap = await getNameIdMap()
                     }
-                    await tableObj.addRecord({
+                    if (!nameObjMap["抽奖结果"]){
+                        // 添加 转盘结果 字段
+                        await resultTable.addField({
+                            name: "抽奖结果",
+                            type: FieldType.Text
+                        })
+                        nameObjMap = await getNameIdMap()
+                    }
+
+                    await resultTable.addRecord({
                       fields: {
                           [nameObjMap['转盘名称']]: zpTitle,
                           [nameObjMap['抽奖结果']]: resultText
                       }
                     })
 
-                    if (!baseInfo.current.resultTableId) {
-                        // 创建表
-                    }
                     return
                 }
                 if (type === "setZpInfo") {
@@ -164,7 +160,13 @@ export default function App() {
                     }, event.origin);
                     return
                 }
-
+                if (type === "checkAlive"){
+                    event.source.postMessage({
+                        from: "base_zp001",
+                        data: "success"
+                    }, event.origin);
+                    return
+                }
             }
         }
         window.addEventListener('message', check);
@@ -176,7 +178,7 @@ export default function App() {
 
 
     const toZP = () => {
-        let zp = window.open("http://qzp.cm321.cn/")
+        let zp = window.open("http://localhost:3000/")
         baseInfo.current.zpWeb = zp
         zp.postMessage({
             from: "base_zp001",
