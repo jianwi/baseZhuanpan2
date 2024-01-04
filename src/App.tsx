@@ -41,6 +41,7 @@ export default function App() {
 
     const checkApi = async () => {
         try {
+            console.log("开始获取表结构", 111)
             let r = await bitable.base.getTableMetaList()
             console.log("获取表结构", r)
         }catch (e) {
