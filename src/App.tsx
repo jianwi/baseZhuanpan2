@@ -27,16 +27,16 @@ export default function App() {
         console.log("currentSelection", currentSelection)
         baseInfo.current.baseId = currentSelection.baseId
 
-        // 检查有无 result 表
-        let resultTableId = await bitable.bridge.getData("resultTableId")
-        if (resultTableId) {
-            // 判断 result 表是否存在
-            let r = await bitable.base.getTableById(resultTableId)
-            console.log(r)
-            setResultTableId(r.id)
-        } else {
-
-        }
+        // // 检查有无 result 表
+        // let resultTableId = await bitable.bridge.getData("resultTableId")
+        // if (resultTableId) {
+        //     // 判断 result 表是否存在
+        //     let r = await bitable.base.getTableById(resultTableId)
+        //     console.log(r)
+        //     setResultTableId(r.id)
+        // } else {
+        //
+        // }
     }
 
     useEffect(() => {
@@ -112,6 +112,7 @@ export default function App() {
                         resultTable = table
                     }
                     // 写入数据
+                    // @ts-ignore
                     let tableObj = await bitable.base.getTableById(resultTable.tableId)
                     let fields = await tableObj.getFieldMetaList()
                     console.log(fields)
