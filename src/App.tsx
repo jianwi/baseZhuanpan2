@@ -5,7 +5,7 @@ import {
     IFilterDateTimeCondition,
     IFilterDateTimeValue,
 } from "@lark-base-open/js-sdk";
-import {Button, Card, Col, DatePicker, Input, Modal, Row, Select, Space, Table, Toast} from "@douyinfe/semi-ui";
+import {Banner, Button, Card, Col, DatePicker, Input, Modal, Row, Select, Space, Table, Toast} from "@douyinfe/semi-ui";
 import {IconAlarm, IconConnectionPoint1, IconCrossStroked, IconDelete, IconMinus, IconSend} from "@douyinfe/semi-icons";
 import {useTranslation} from "react-i18next";
 import {getFilterOperatorMap} from "./utils";
@@ -38,12 +38,19 @@ export default function App() {
         //
         // }
     }
-
+    const [baseUrl, setBaseUrl] = useState("")
+    const [uaString, setUaString] = useState("")
     const checkApi = async () => {
         try {
             console.log("开始获取表结构", 111)
             let r = await bitable.base.getTableMetaList()
             console.log("获取表结构", r)
+            let userAgentString = navigator.userAgent;
+            setUaString(userAgentString)
+            let selection = await bitable.base.getSelection()
+            let baseUrl = await bitable.bridge.getBitableUrl(selection)
+            setBaseUrl(baseUrl)
+            console.log("baseUrl", baseUrl)
         }catch (e) {
             console.error(e)
         }
@@ -177,20 +184,42 @@ export default function App() {
         }, 'http://localhost:3000');
     }
 
-    function TipResultTable() {
-        return <>您已创建 转盘结果表，请不要修改字段名称 和 删除字段</>
+    function BannerTip() {
+        return <Banner description={<>
+            飞书客户端暂不支持保存转盘信息，请在浏览器中使用此插件。
+        </>}></Banner>
     }
 
     return (<div>
+        {/lark/i.test(uaString) && <BannerTip/>}
+        <div>{}</div>
         <div style={{
             display: "flex",
             justifyContent: "center",
             alignItems: "center",
-            height: "90vh",
+            height: "50vh",
             padding: "10px 20px"
         }}>
             <Button size={'large'} theme={'solid'} onClick={toZP}>打开大转盘</Button>
         </div>
+        <div style={{
+            background:"#f7f8f8",
+            padding: 20,
+            fontSize:14,
+        }}>
+            <div style={{textAlign:"center",fontWeight:500}}>请点击【打开大转盘】按钮开始使用</div>
+            {/*<div style={{textAlign:"center",margin:10,color:"#1c90ff"}}>点击【打开大转盘】按钮开始使用</div>*/}
+            <div style={{padding: "10px", margin: "auto", width: "fit-content", marginTop: 20}}>
+                <div style={{margin: 5}}>使用转盘时不要关闭此页面</div>
+                <div style={{margin: 5}}>转盘必须从当前页面打开</div>
+                <div style={{margin: 15, textAlign:"center"}}>不然无法保存转盘</div>
+                <div style={{marginTop: "25px", textAlign:"center"}}>
+                    <a target={'_blank'} href={'https://applink.feishu.cn/client/chat/chatter/add_by_link?link_token=5f5rf10b-bf22-433b-af81-17da47806c01'}>加入"转盘插件"讨论群</a>
+                </div>
+            </div>
+
+        </div>
+
 
     </div>)
 
