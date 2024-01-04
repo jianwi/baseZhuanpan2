@@ -178,7 +178,7 @@ export default function App() {
 
 
     const toZP = () => {
-        let zp = window.open("http://localhost:3000/")
+        let zp = window.open("http://qzp.cm321.cn/")
         baseInfo.current.zpWeb = zp
         zp.postMessage({
             from: "base_zp001",
