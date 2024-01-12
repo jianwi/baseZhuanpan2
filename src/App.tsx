@@ -194,33 +194,11 @@ export default function App() {
 
     return (<div>
         {/lark/i.test(uaString) && <BannerTip/>}
-        <div>{}</div>
-        <div style={{
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            height: "50vh",
-            padding: "10px 20px"
-        }}>
-            <Button size={'large'} theme={'solid'} onClick={toZP}>打开大转盘</Button>
-        </div>
-        <div style={{
-            background:"#f7f8f8",
-            padding: 20,
-            fontSize:14,
-        }}>
-            <div style={{textAlign:"center",fontWeight:500}}>请点击【打开大转盘】按钮开始使用</div>
-            {/*<div style={{textAlign:"center",margin:10,color:"#1c90ff"}}>点击【打开大转盘】按钮开始使用</div>*/}
-            <div style={{padding: "10px", margin: "auto", width: "fit-content", marginTop: 20}}>
-                <div style={{margin: 5}}>使用转盘时不要关闭此页面</div>
-                <div style={{margin: 5}}>转盘必须从当前页面打开</div>
-                <div style={{margin: 15, textAlign:"center"}}>不然无法保存转盘</div>
-                <div style={{marginTop: "25px", textAlign:"center"}}>
-                    <a target={'_blank'} href={'https://applink.feishu.cn/client/chat/chatter/add_by_link?link_token=5f5rf10b-bf22-433b-af81-17da47806c01'}>加入"转盘插件"讨论群</a>
-                </div>
-            </div>
 
-        </div>
+        <iframe style={{
+            width:"100vw",
+            height: "900px"
+        }} src={'http://127.0.0.1:3000'} frameBorder={0}></iframe>
 
 
     </div>)
