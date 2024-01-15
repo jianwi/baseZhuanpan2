@@ -40,7 +40,7 @@ export default function App() {
                         type: FieldType.Text
                     },
                     {
-                        name: "中奖情况",
+                        name: "抽中奖品",
                         type: FieldType.Formula
                     },
                     {
@@ -56,12 +56,15 @@ export default function App() {
             table = await bitable.base.getTableByName(tableName)
         }
 
-
         // 获取items
         let names = []
-        let records = await getTableRecords(table)
+        let records = await getTableRecords(table,{})
         if (records.length > 0){
             for (let record of records){
+                if (record["抽中奖品"] && record["抽中奖品"].value){
+                    continue
+                }
+
                 let nameInfo = record["人员"]
                 if (!nameInfo){
                     throw new Error("人员字段不存在")
@@ -97,8 +100,16 @@ export default function App() {
 
                     },
                     {
-                        name: "数量",
+                        name: "总数",
                         type: FieldType.Number
+                    },
+                    {
+                        name: "剩余数量",
+                        type: FieldType.Formula
+                    },
+                    {
+                        name: "已中数量",
+                        type: FieldType.Formula
                     }
                 ]
             })
@@ -107,13 +118,19 @@ export default function App() {
         // 获取items
         let prizes = []
         let records = await getTableRecords(table)
+        console.log("records",records)
         if (records.length > 0){
             for (let record of records){
+                console.log(record)
+                if (record["剩余数量"].value < 1){
+                    console.log(record["剩余数量"].value)
+                    continue
+                }
                 let info = {}
                 if (record["奖项名称"] && record["奖项名称"].value){
                     info["奖项名称"] = record["奖项名称"].value[0].text
-                    if (record["数量"] && record["数量"].value){
-                        info["数量"] = record["数量"].value
+                    if (record["剩余数量"] && record["剩余数量"].value){
+                        info["剩余数量"] = record["剩余数量"].value
                         prizes.push(info)
                     }
                 }
@@ -122,9 +139,85 @@ export default function App() {
         return prizes
     }
 
-    async function getItems(){
+    async function addResult(name, prize){
+        let tableName = "抽奖记录"
+        let table
+        try {
+            table = await bitable.base.getTableByName(tableName)
+        } catch (e) {
+            console.error("获取表失败", e)
+        }
+        if (!table) {
+            console.log("创建表")
+            // 创建表
+            await bitable.base.addTable({
+                name: tableName,
+                fields: [
+                    {
+                        name: "ID",
+                        type: FieldType.AutoNumber,
 
+                    },
+                    {
+                        name: "人员",
+                        type: FieldType.Text
+                    },
+                    {
+                        name: "奖项",
+                        type: FieldType.Text
+                    },
+                    {
+                        name: "修改人",
+                        type: FieldType.ModifiedUser
+                    },
+                    {
+                        name: "修改时间",
+                        type: FieldType.ModifiedTime
+                    }
+                ]
+            })
+            table = await bitable.base.getTableByName(tableName)
+        }
+        // 写入数据
+        let getNameIdMap = async function (){
+            // @ts-ignore
+            let fields = await table.getFieldMetaList()
+            console.log(fields)
+            // await tableObj
+            let nameObjMap = {}
+            for (let field of fields) {
+                nameObjMap[field.name] = field.id
+            }
+            return nameObjMap
+        }
+        let nameObjMap = await getNameIdMap()
+
+        if (!nameObjMap["人员"]) {
+            // 添加 转盘名称 字段
+            await table.addField({
+                name: "人员",
+                type: FieldType.Text
+            })
+            nameObjMap = await getNameIdMap()
+        }
+        if (!nameObjMap["奖项"]){
+            // 添加 转盘结果 字段
+            await table.addField({
+                name: "奖项",
+                type: FieldType.Text
+            })
+            nameObjMap = await getNameIdMap()
+        }
+
+
+        await table.addRecord({
+            fields: {
+                [nameObjMap['人员']]: name,
+                [nameObjMap['奖项']]: prize
+            }
+        })
     }
+
 
     const [uaString, setUaString] = useState("")
     const checkApi = async () => {
@@ -149,7 +242,11 @@ export default function App() {
                 if (type === "getNames"){
                     let names = await getNames()
                     console.log(names)
-                    return names
+                    event.source.postMessage({
+                        from: "base_zp001",
+                        names
+                    }, event.origin);
+                    return
                 }
                 if (type === 'getPrizes'){
                     let prizes = await getPrize()
@@ -158,18 +255,25 @@ export default function App() {
                 }
                 // 获取转盘信息
                 if (type === "getZpInfo") {
-                    let zpInfo = await bitable.bridge.getData("zpInfo")
+                    let names = await getNames()
+                    let prizes = await getPrize()
                     event.source.postMessage({
                         from: "base_zp001",
-                        zpInfo
+                        zpInfo: {
+                            names,
+                            prizes
+                        }
                     }, event.origin);
                     return
                 }
-                if (type === "getTables") {
-                    let tables = await bitable.base.getTableMetaList()
+                if (type === "addResult") {
+                    let {name, prize} = data
+                    console.log("添加结果", name, prize)
+                    await addResult(name, prize)
+
                     event.source.postMessage({
                         from: "base_zp001",
-                        data: tables
+                        data:"ok"
                     }, event.origin);
                     return
                 }
