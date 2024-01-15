@@ -6,7 +6,7 @@ import {
     IFilterDateTimeValue,
 } from "@lark-base-open/js-sdk";
 import {Banner, Button, Card, Col, DatePicker, Input, Modal, Row, Select, Space, Table, Toast} from "@douyinfe/semi-ui";
-
+import {getTableRecords} from "./utils";
 
 export default function App() {
     const baseInfo = useRef({
@@ -16,13 +16,116 @@ export default function App() {
         zpWeb: null
     })
 
-    async function checkStore() {
-        // 获取当前的appToken
-        let currentSelection = await bitable.base.getSelection()
-        console.log("currentSelection", currentSelection)
-        baseInfo.current.baseId = currentSelection.baseId
+    async function getNames() {
+        let tableName = "抽奖人员"
+        let table
+        try {
+            table = await bitable.base.getTableByName(tableName)
+        } catch (e) {
+            console.error("获取表失败", e)
+        }
+        if (!table) {
+            console.log("创建表")
+            // 创建表
+            await bitable.base.addTable({
+                name: tableName,
+                fields: [
+                    {
+                        name: "ID",
+                        type: FieldType.AutoNumber,
+
+                    },
+                    {
+                        name: "人员",
+                        type: FieldType.Text
+                    },
+                    {
+                        name: "中奖情况",
+                        type: FieldType.Formula
+                    },
+                    {
+                        name: "修改人",
+                        type: FieldType.ModifiedUser
+                    },
+                    {
+                        name: "修改时间",
+                        type: FieldType.ModifiedTime
+                    }
+                ]
+            })
+            table = await bitable.base.getTableByName(tableName)
+        }
+
+
+        // 获取items
+        let names = []
+        let records = await getTableRecords(table)
+        if (records.length > 0){
+            for (let record of records){
+                let nameInfo = record["人员"]
+                if (!nameInfo){
+                    throw new Error("人员字段不存在")
+                }
+                if (nameInfo.value){
+                    if (nameInfo.value[0]){
+                        let name = nameInfo.value[0].name || nameInfo.value[0].text
+                        if (name) names.push(name)
+                    }
+                }
+            }
+        }
+        return names
+    }
+
+    async function getPrize(){
+        let tableName = "奖项"
+        let table
+        try {
+            table = await bitable.base.getTableByName(tableName)
+        } catch (e) {
+            console.error("获取表失败", e)
+        }
+        if (!table) {
+            console.log("创建表")
+            // 创建表
+            await bitable.base.addTable({
+                name: tableName,
+                fields: [
+                    {
+                        name: "奖项名称",
+                        type: FieldType.Text,
+
+                    },
+                    {
+                        name: "数量",
+                        type: FieldType.Number
+                    }
+                ]
+            })
+            table = await bitable.base.getTableByName(tableName)
+        }
+        // 获取items
+        let prizes = []
+        let records = await getTableRecords(table)
+        if (records.length > 0){
+            for (let record of records){
+                let info = {}
+                if (record["奖项名称"] && record["奖项名称"].value){
+                    info["奖项名称"] = record["奖项名称"].value[0].text
+                    if (record["数量"] && record["数量"].value){
+                        info["数量"] = record["数量"].value
+                        prizes.push(info)
+                    }
+                }
+            }
+        }
+        return prizes
+    }
+
+    async function getItems(){
 
     }
+
     const [uaString, setUaString] = useState("")
     const checkApi = async () => {
         try {
@@ -43,6 +146,16 @@ export default function App() {
                 let type = event.data.type
                 let data = event.data
                 console.log("消息类型", type)
+                if (type === "getNames"){
+                    let names = await getNames()
+                    console.log(names)
+                    return names
+                }
+                if (type === 'getPrizes'){
+                    let prizes = await getPrize()
+                    console.log(prizes)
+                    return prizes
+                }
                 // 获取转盘信息
                 if (type === "getZpInfo") {
                     let zpInfo = await bitable.bridge.getData("zpInfo")
@@ -178,7 +291,7 @@ export default function App() {
 
 
     const toZP = () => {
-        let zp = window.open("http://qzp.cm321.cn/")
+        let zp = window.open("http://127.0.0.1:3000/")
         baseInfo.current.zpWeb = zp
         zp.postMessage({
             from: "base_zp001",
@@ -193,12 +306,28 @@ export default function App() {
     }
 
     return (<div>
-        {/lark/i.test(uaString) && <BannerTip/>}
+        {/*{/lark/i.test(uaString) && <BannerTip/>}*/}
 
         <iframe style={{
             width:"100vw",
-            height: "900px"
+            height: "80vh"
         }} src={'http://127.0.0.1:3000'} frameBorder={0}></iframe>
+
+        <div style={{
+            textAlign:"center"
+        }}>
+            <Button onClick={()=>{
+                if (/lark/i.test(uaString) ) {
+                    bitable.ui.showToast({
+                        message:"请在浏览器中使用，飞书客户端不支持哦！"
+                    })
+                    return
+                }
+                toZP()
+
+            }}>大屏打开</Button>
+
+        </div>
 
 
     </div>)
