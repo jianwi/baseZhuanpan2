@@ -415,7 +415,7 @@ export default function App() {
         <iframe style={{
             width:"100vw",
             height: "80vh"
-        }} src={'http://127.0.0.1:3000'} frameBorder={0}></iframe>
+        }} src={'https://basezp2.cm321.cn'} frameBorder={0}></iframe>
 
         <div style={{
             textAlign:"center"
