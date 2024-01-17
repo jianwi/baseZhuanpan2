@@ -19,12 +19,12 @@ export default function App() {
 
 
     async function getZpInfo(){
+        let results = await getZpResults()
+        console.log("results---", results)
         let names = await getNames()
         console.log("names----",names)
         let prizes = await getPrize()
         console.log("prize----",prizes)
-        let results = await getZpResults()
-        console.log("results---", results)
         return {
             names,
             prizes,

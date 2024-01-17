@@ -50,24 +50,36 @@ export async function getNamesTable(){
 
                 },
                 {
-                    name: "人员",
+                    name: "手动输入人员",
                     type: FieldType.Text
+                },
+                {
+                    name: "人员",
+                    type: FieldType.Formula
                 },
                 {
                     name: "抽中奖品",
                     type: FieldType.Formula
                 },
                 {
-                    name: "修改人",
-                    type: FieldType.ModifiedUser
+                    name: "签到人员",
+                    type: FieldType.CreatedUser
                 },
                 {
-                    name: "修改时间",
-                    type: FieldType.ModifiedTime
+                    name: "收货地址",
+                    type: FieldType.Text
+                },
+                {
+                    name: "手机号",
+                    type: FieldType.Number
                 }
             ]
         })
         table = await bitable.base.getTableByName(tableName)
+        let fieldPeople = await table.getFieldByName("人员")
+        await fieldPeople.setFormula("IFBLANK([手动输入人员],[签到人员])")
+        let fieldPrize = await table.getFieldByName("抽中奖品")
+        await fieldPrize.setFormula("[抽奖记录].FILTER(CurrentValue.[人员]=[人员]).[奖项]")
     }
     return table
 }
@@ -86,11 +98,6 @@ export async function getPrizesTable(){
         await bitable.base.addTable({
             name: tableName,
             fields: [
-                {
-                    name: "ID",
-                    type: FieldType.AutoNumber,
-
-                },
                 {
                     name: "奖项名称",
                     type: FieldType.Text,
@@ -111,6 +118,10 @@ export async function getPrizesTable(){
             ]
         })
         table = await bitable.base.getTableByName(tableName)
+        let fieldLeft = await table.getFieldByName("剩余数量")
+        await fieldLeft.setFormula("[总数]-[已中数量]")
+        let fieldZpResult = await table.getFieldByName("已中数量")
+        await fieldZpResult.setFormula("COUNTA([抽奖记录].FILTER(CurrentValue.[奖项]=[奖项名称]).[ID])")
     }
     return table
 }
