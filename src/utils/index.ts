@@ -198,9 +198,9 @@ export async function getPrize(){
     let records = await getTableRecords(table)
     if (records.length > 0){
         for (let record of records){
-            if (record["剩余数量"].value < 1){
-                continue
-            }
+            // if (record["剩余数量"].value < 1){
+            //     continue
+            // }
             let info = {}
             if (record["奖项名称"] && record["奖项名称"].value){
                 info["奖项名称"] = record["奖项名称"].value[0].text
